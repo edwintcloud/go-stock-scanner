@@ -3,6 +3,7 @@ package scanner
 import (
 	"context"
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/edwintcloud/go-stock-scanner/internal/config"
@@ -19,6 +20,8 @@ type Scanner struct {
 	rest              *massiverest.Client
 	tickerBars        domain.TickerBars
 	tickerSnapshotMap map[string]TickerSnapshot
+	blockedSymbols    map[string]bool
+	currentCanidates  []domain.Bar
 }
 
 func NewScanner(config *config.Config) (*Scanner, error) {
@@ -36,6 +39,8 @@ func NewScanner(config *config.Config) (*Scanner, error) {
 		rest:              massiverest.NewWithOptions(config.MassiveAPIKey, massiverest.WithPagination(true)),
 		tickerBars:        make(domain.TickerBars),
 		tickerSnapshotMap: make(map[string]TickerSnapshot),
+		blockedSymbols:    make(map[string]bool),
+		currentCanidates:  make([]domain.Bar, 0),
 	}, nil
 }
 
@@ -70,11 +75,31 @@ func (s *Scanner) Start(ctx context.Context) error {
 				if s.shouldSkipBar(bar) {
 					continue
 				}
-				fmt.Printf("Symbol: %s, Price: %.2f, Accumulated Volume: %.2f, Average Size: %.2f\n", v.Symbol, v.Close, v.Volume, v.AverageSize)
+				s.currentCanidates = append(s.currentCanidates, bar)
 			default:
 				log.Debugf("unknown type: %T\n", out)
 				continue
 			}
 		}
+		s.emitCanidates()
 	}
+}
+
+func (s *Scanner) emitCanidates() {
+	if len(s.currentCanidates) < 10 {
+		return
+	}
+	slices.SortFunc(s.currentCanidates, func(a, b domain.Bar) int {
+		if b.TodaysVolume > a.TodaysVolume {
+			return 1
+		}
+		return -1
+	})
+	fmt.Println("Top 10 canidates:")
+	for i := range 10 {
+		c := s.currentCanidates[i]
+		fmt.Printf("%s: Close=%.2f, Volume=%d\n", c.Ticker, c.Close, c.TodaysVolume)
+	}
+	fmt.Println()
+	s.currentCanidates = make([]domain.Bar, 0)
 }

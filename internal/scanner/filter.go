@@ -8,24 +8,24 @@ import (
 )
 
 func (s *Scanner) shouldSkipBar(bar domain.Bar) bool {
-	if s.isBlockedSymbolType(bar) ||
+	if s.isBlockedSymbol(bar) ||
 		s.isOutOfPriceRange(bar) ||
 		s.hasLowVolume(bar) ||
 		s.hasLowRelativeVolume(bar) ||
-		s.hasPremarketGapPercentageOutOfRange(bar) {
+		s.isNotAGainer(bar) {
 		return true
 	}
 	return false
 }
 
-func (s *Scanner) isBlockedSymbolType(bar domain.Bar) bool {
+func (s *Scanner) isBlockedSymbol(bar domain.Bar) bool {
 	blockedTypes := []string{"ETF", "ETN", "REIT"}
 	for _, t := range blockedTypes {
 		if strings.Contains(bar.Ticker, t) {
 			return true
 		}
 	}
-	return false
+	return s.blockedSymbols[bar.Ticker]
 }
 
 func (s *Scanner) isOutOfPriceRange(bar domain.Bar) bool {
@@ -39,19 +39,18 @@ func (s *Scanner) hasLowVolume(bar domain.Bar) bool {
 func (s *Scanner) hasLowRelativeVolume(bar domain.Bar) bool {
 	tickerSnapshot, ok := s.tickerSnapshotMap[bar.Ticker]
 	if !ok {
-		log.Debugf("no snapshot data for %s", bar.Ticker)
+		log.Debugf("no snapshot data for %s, adding to blocked symbols", bar.Ticker)
+		s.blockedSymbols[bar.Ticker] = true
 		return true // if we don't have snapshot data, skip
 	}
 
 	return float64(bar.TodaysVolume)/float64(tickerSnapshot.PreviousDayVolume) < s.config.ScannerOptions.MinRelativeVolume
 }
 
-func (s *Scanner) hasPremarketGapPercentageOutOfRange(bar domain.Bar) bool {
-	premarketGapPercent, err := s.calculatePremarketGapPercent(bar.Ticker)
-	if err != nil {
-		log.Debugf("unable to get premarket gap percent for %s: %v", bar.Ticker, err)
-		return true // if we can't get premarket gap, skip
+func (s *Scanner) isNotAGainer(bar domain.Bar) bool {
+	tickerSnapshot, ok := s.tickerSnapshotMap[bar.Ticker]
+	if !ok {
+		return true // if we don't have snapshot data, skip
 	}
-	return premarketGapPercent < s.config.ScannerOptions.MinPremarketGapPercent ||
-		premarketGapPercent > s.config.ScannerOptions.MaxPremarketGapPercent
+	return tickerSnapshot.DayChangePercent < s.config.ScannerOptions.MinChangePercent
 }

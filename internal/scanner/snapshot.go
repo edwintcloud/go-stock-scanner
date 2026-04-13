@@ -15,6 +15,7 @@ type TickerSnapshot struct {
 	DayHigh           float64
 	DayLow            float64
 	DayVolume         uint64
+	DayChangePercent  float64
 	PreviousDayOpen   float64
 	PreviousDayClose  float64
 	PreviousDayHigh   float64
@@ -72,6 +73,7 @@ func (s *Scanner) getTickerSnapshotMap(ctx context.Context) (map[string]TickerSn
 			DayHigh:           ticker.Day.H,
 			DayLow:            ticker.Day.L,
 			DayVolume:         uint64(ticker.Day.V),
+			DayChangePercent:  *ticker.TodaysChangePerc,
 			PreviousDayOpen:   ticker.PrevDay.O,
 			PreviousDayClose:  ticker.PrevDay.C,
 			PreviousDayHigh:   ticker.PrevDay.H,

@@ -11,12 +11,11 @@ import (
 type Config struct {
 	MassiveAPIKey  string
 	ScannerOptions struct {
-		MinPrice               float64 `yaml:"minPrice"`
-		MaxPrice               float64 `yaml:"maxPrice"`
-		MinVolume              uint64  `yaml:"minVolume"`
-		MinPremarketGapPercent float64 `yaml:"minPremarketGapPercent"`
-		MaxPremarketGapPercent float64 `yaml:"maxPremarketGapPercent"`
-		MinRelativeVolume      float64 `yaml:"minRelativeVolume"`
+		MinPrice          float64 `yaml:"minPrice"`
+		MaxPrice          float64 `yaml:"maxPrice"`
+		MinVolume         uint64  `yaml:"minVolume"`
+		MinRelativeVolume float64 `yaml:"minRelativeVolume"`
+		MinChangePercent  float64 `yaml:"minChangePercent"`
 	} `yaml:"scannerOptions"`
 }
 

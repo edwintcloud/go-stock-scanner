@@ -2,7 +2,6 @@ scannerOptions:
   minPrice: 3.5
   maxPrice: 40.0
   minVolume: 100000
-  minPremarketGapPercent: -0.015 # -15% gap down
-  maxPremarketGapPercent: -0.04 # -4% gap down
   minRelativeVolume: 2.0
+  minChangePercent: 0.05 # 5% change from previous close
 
