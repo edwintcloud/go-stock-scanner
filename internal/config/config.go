@@ -16,6 +16,7 @@ type Config struct {
 		MinVolume              uint64  `yaml:"minVolume"`
 		MinPremarketGapPercent float64 `yaml:"minPremarketGapPercent"`
 		MaxPremarketGapPercent float64 `yaml:"maxPremarketGapPercent"`
+		MinRelativeVolume      float64 `yaml:"minRelativeVolume"`
 	} `yaml:"scannerOptions"`
 }
 

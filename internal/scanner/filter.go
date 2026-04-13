@@ -37,16 +37,21 @@ func (s *Scanner) hasLowVolume(bar domain.Bar) bool {
 }
 
 func (s *Scanner) hasLowRelativeVolume(bar domain.Bar) bool {
-	// TODO: implement using today accumulated volume / prevDay snapshot volume
-	return false
+	tickerSnapshot, ok := s.tickerSnapshotMap[bar.Ticker]
+	if !ok {
+		log.Debugf("no snapshot data for %s", bar.Ticker)
+		return true // if we don't have snapshot data, skip
+	}
+
+	return float64(bar.TodaysVolume)/float64(tickerSnapshot.PreviousDayVolume) < s.config.ScannerOptions.MinRelativeVolume
 }
 
 func (s *Scanner) hasPremarketGapPercentageOutOfRange(bar domain.Bar) bool {
-	premarketGapPct, err := s.calculatePremarketGapPercent(bar.Ticker)
+	premarketGapPercent, err := s.calculatePremarketGapPercent(bar.Ticker)
 	if err != nil {
 		log.Debugf("unable to get premarket gap percent for %s: %v", bar.Ticker, err)
 		return true // if we can't get premarket gap, skip
 	}
-	return premarketGapPct < s.config.ScannerOptions.MinPremarketGapPercent ||
-		premarketGapPct > s.config.ScannerOptions.MaxPremarketGapPercent
+	return premarketGapPercent < s.config.ScannerOptions.MinPremarketGapPercent ||
+		premarketGapPercent > s.config.ScannerOptions.MaxPremarketGapPercent
 }

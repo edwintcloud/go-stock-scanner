@@ -3,6 +3,7 @@ package scanner
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/edwintcloud/go-stock-scanner/internal/config"
 	"github.com/edwintcloud/go-stock-scanner/internal/domain"
@@ -13,10 +14,11 @@ import (
 )
 
 type Scanner struct {
-	config     *config.Config
-	ws         *massivews.Client
-	rest       *massiverest.Client
-	tickerBars domain.TickerBars
+	config            *config.Config
+	ws                *massivews.Client
+	rest              *massiverest.Client
+	tickerBars        domain.TickerBars
+	tickerSnapshotMap map[string]TickerSnapshot
 }
 
 func NewScanner(config *config.Config) (*Scanner, error) {
@@ -29,15 +31,18 @@ func NewScanner(config *config.Config) (*Scanner, error) {
 		return nil, err
 	}
 	return &Scanner{
-		config:     config,
-		ws:         ws,
-		rest:       massiverest.NewWithOptions(config.MassiveAPIKey, massiverest.WithPagination(true)),
-		tickerBars: make(domain.TickerBars),
+		config:            config,
+		ws:                ws,
+		rest:              massiverest.NewWithOptions(config.MassiveAPIKey, massiverest.WithPagination(true)),
+		tickerBars:        make(domain.TickerBars),
+		tickerSnapshotMap: make(map[string]TickerSnapshot),
 	}, nil
 }
 
 func (s *Scanner) Start(ctx context.Context) error {
 	defer s.ws.Close()
+
+	go s.refreshTickerSnapshotMapOnInterval(ctx, 15*time.Minute)
 
 	err := s.ws.Subscribe(massivews.StocksMinAggs, "*")
 	if err != nil {
